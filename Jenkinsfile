@@ -1,34 +1,51 @@
-
-node('master') 
+pipeline
 {
-    stage('ContinuousDownload-Feature1') 
+    agent any
+    stages
     {
-        git 'https://github.com/selenium-saikrishna/maven.git'
+        stage('ContinuousDownload')
+        {
+            steps
+            {
+                git 'https://github.com/selenium-saikrishna/maven.git'
+            }
+        }
+        stage('ContinuousBuild')
+        {
+            steps
+            {
+                sh 'mvn package'
+            }
+        }
+        stage('ContinuousDeployment')
+        {
+            steps
+            {
+                sh 'scp /home/ubuntu/.jenkins/workspace/Pipeline/webapp/target/webapp.war ubuntu@172.31.34.195:/var/lib/tomcat7/webapp/qaenv.war'
+            }
+        }
+        stage('ContinuousTesting')
+        {
+            steps
+            {
+                git 'https://github.com/selenium-saikrishna/TestingOnAWS.git'
+            
+                
+            }
+        }
+        
     }
-    stage('ContinuousBuild-Feature1') 
+    post
     {
-        sh 'mvn package'
+        success
+        {
+            input message: 'Waiting for Approval', submitter: 'Venu'
+             sh 'scp /home/ubuntu/.jenkins/workspace/Pipeline/webapp/target/webapp.war ubuntu@172.31.47.219:/var/lib/tomcat7/webapp/prodenv.war'
+        }
+        failure
+        {
+            mail bcc: '', body: 'Jenkins job has failed', cc: '', from: '', replyTo: '', subject: 'Jenkins Notification', to: 'gandham.saikrishna@gmail.com'
+        }
     }
-    stage('ContinuousDeployment-Feature1') 
-    {
-        sh 'scp /home/vagrant/.jenkins/workspace/ScriptedPipeline/webapp/target/webapp.war vagrant@10.0.0.32:/var/lib/tomcat7/webapps/qaenv.war'
-    }
-    stage('ContinuousTesting-Feature1') 
-    {
-        git 'https://github.com/selenium-saikrishna/TestingOnLinux.git'
-       sh 'java -jar /home/vagrant/.jenkins/workspace/ScriptedPipeline/testing.jar'
-    }
-    
-    stage('ContinuousDelivery-Feature1')
-    {
-        input message: 'Waiting for approval', submitter: 'Venu'
-        sh 'scp /home/vagrant/.jenkins/workspace/ScriptedPipeline/webapp/target/webapp.war vagrant@10.0.0.33:/var/lib/tomcat7/webapps/prodenv.war'
-    }
-    
-   
-   
-   
-   
-   
-   
 }
+
